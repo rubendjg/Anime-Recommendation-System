@@ -1,7 +1,10 @@
 kagglehub[pandas-datasets]
+ipykernel
 scipy
 matplotlib==3.7.3
 numpy==1.26.4
 pandas==1.5.3
 seaborn==0.11.2
 surprise
+recmetrics
+scikit-learn
