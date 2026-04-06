@@ -1023,7 +1023,6 @@ code {
   flex: 0 0 auto;
   width: min(210px, 46vw);
   scroll-snap-align: start;
-  border: none;
   padding: 0;
   background: transparent;
   color: inherit;
@@ -1084,6 +1083,7 @@ code {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 2;
   padding: 0.2rem 0.45rem;
   border-radius: 8px;
   font-size: 0.7rem;
@@ -1091,6 +1091,78 @@ code {
   background: rgba(10, 9, 18, 0.88);
   color: var(--teal);
   border: 1px solid var(--teal-dim);
+}
+
+/* ——— Save (heart) ——— */
+.save-heart {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(8, 7, 14, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.save-heart:hover {
+  color: #fff;
+  background: rgba(139, 124, 248, 0.35);
+  transform: scale(1.06);
+}
+
+.save-heart:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+
+.save-heart--saved {
+  color: var(--coral);
+  background: rgba(244, 114, 182, 0.22);
+}
+
+.save-heart--saved:hover {
+  background: rgba(244, 114, 182, 0.32);
+}
+
+.save-heart--on-card {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 4;
+}
+
+.save-heart--on-hero {
+  position: absolute;
+  top: 13px;
+  left: 13px;
+  z-index: 4;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.save-heart--on-hero svg {
+  width: 22px;
+  height: 22px;
+}
+
+.save-heart--on-modal {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
 }
 
 .anime-card__caption {
@@ -1210,6 +1282,8 @@ code {
 .modal-hero__shade {
   position: absolute;
   inset: 0;
+  z-index: 1;
+  pointer-events: none;
   background: linear-gradient(0deg, var(--bg-elevated) 0%, transparent 60%);
 }
 

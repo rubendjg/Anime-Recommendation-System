@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ContentRow } from './components/ContentRow'
 import { DetailModal } from './components/DetailModal'
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
 import { useAnimeData } from './hooks/useAnimeData'
+import { useSavedMalIds } from './hooks/useSavedMalIds'
 import type { Anime } from './types'
 
 function norm(s: string) {
@@ -24,11 +25,31 @@ function genreHas(anime: Anime, g: string) {
   return norm(anime.genres).includes(norm(g))
 }
 
+/** Below this count, Saved shows each title once; at or above, use the same infinite strip as other rows. */
+const SAVED_INFINITE_LOOP_MIN = 5
+
 export default function App() {
   const { status, catalog, byId, recs, err } = useAnimeData()
+  const { savedMalIds, isSaved, toggleSave } = useSavedMalIds()
   const [userId, setUserId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Anime | null>(null)
+
+  const onToggleSaveAnime = useCallback(
+    (a: Anime) => {
+      toggleSave(a.mal_id)
+    },
+    [toggleSave],
+  )
+
+  const savedList = useMemo(() => {
+    const out: Anime[] = []
+    for (const id of savedMalIds) {
+      const a = byId.get(id)
+      if (a) out.push(a)
+    }
+    return out
+  }, [savedMalIds, byId])
 
   const effectiveUserId =
     userId ??
@@ -138,13 +159,28 @@ export default function App() {
         <Hero
           slides={spotlightSlides}
           onOpenDetails={(anime) => setSelected(anime)}
+          isSaved={isSaved}
+          onToggleSave={onToggleSaveAnime}
         />
         <div className="rows-wrap">
+          {savedList.length > 0 && (
+            <ContentRow
+              title="Saved"
+              items={savedList}
+              predictedByMalId={predictedMap}
+              onOpen={setSelected}
+              isSaved={isSaved}
+              onToggleSave={onToggleSaveAnime}
+              infiniteLoop={savedList.length >= SAVED_INFINITE_LOOP_MIN}
+            />
+          )}
           <ContentRow
             title="Matched to your taste"
             items={forYouList}
             predictedByMalId={predictedMap}
             onOpen={setSelected}
+            isSaved={isSaved}
+            onToggleSave={onToggleSaveAnime}
           />
           {searchHits.length > 0 && (
             <ContentRow
@@ -152,24 +188,38 @@ export default function App() {
               items={searchHits}
               predictedByMalId={predictedMap}
               onOpen={setSelected}
+              isSaved={isSaved}
+              onToggleSave={onToggleSaveAnime}
             />
           )}
           <ContentRow
             title="Crowd favorites"
             items={trending}
             onOpen={setSelected}
+            isSaved={isSaved}
+            onToggleSave={onToggleSaveAnime}
           />
           <ContentRow
             title="Highest scores"
             items={topRated}
             onOpen={setSelected}
+            isSaved={isSaved}
+            onToggleSave={onToggleSaveAnime}
           />
           <ContentRow
             title="Action & spectacle"
             items={actionPicks}
             onOpen={setSelected}
+            isSaved={isSaved}
+            onToggleSave={onToggleSaveAnime}
           />
-          <ContentRow title="Drama & heart" items={dramaPicks} onOpen={setSelected} />
+          <ContentRow
+            title="Drama & heart"
+            items={dramaPicks}
+            onOpen={setSelected}
+            isSaved={isSaved}
+            onToggleSave={onToggleSaveAnime}
+          />
         </div>
       </main>
       <footer className="app-footer">
@@ -182,6 +232,8 @@ export default function App() {
         anime={selected}
         predictedRating={openSelectedPred}
         onClose={() => setSelected(null)}
+        isSaved={isSaved}
+        onToggleSave={onToggleSaveAnime}
       />
     </div>
   )

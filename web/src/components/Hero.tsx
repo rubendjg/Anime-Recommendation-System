@@ -9,6 +9,7 @@ import {
 } from '../posterUrl'
 import type { Anime } from '../types'
 import { PosterImg } from './PosterImg'
+import { SaveHeartButton } from './SaveHeartButton'
 
 export type SpotlightSlide = {
   anime: Anime
@@ -18,6 +19,8 @@ export type SpotlightSlide = {
 type Props = {
   slides: SpotlightSlide[]
   onOpenDetails: (anime: Anime) => void
+  isSaved: (malId: number) => boolean
+  onToggleSave: (anime: Anime) => void
 }
 
 function PeekPoster({
@@ -47,7 +50,7 @@ function PeekPoster({
   )
 }
 
-export function Hero({ slides, onOpenDetails }: Props) {
+export function Hero({ slides, onOpenDetails, isSaved, onToggleSave }: Props) {
   const [activeIdx, setActiveIdx] = useState(0)
   const [loadedBackdrop, setLoadedBackdrop] = useState<{
     malId: number
@@ -187,6 +190,11 @@ export function Hero({ slides, onOpenDetails }: Props) {
                     className="hero__poster"
                     decoding="async"
                   />
+                  <SaveHeartButton
+                    saved={isSaved(anime.mal_id)}
+                    className="save-heart--on-hero"
+                    onToggle={() => onToggleSave(anime)}
+                  />
                 </div>
               </div>
               <div className="hero__content">
@@ -212,13 +220,6 @@ export function Hero({ slides, onOpenDetails }: Props) {
                     onClick={() => onOpenDetails(anime)}
                   >
                     Open details
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--ghost"
-                    onClick={() => onOpenDetails(anime)}
-                  >
-                    Read more
                   </button>
                 </div>
               </div>

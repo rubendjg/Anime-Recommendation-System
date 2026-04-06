@@ -1,14 +1,23 @@
 import { useEffect } from 'react'
 import type { Anime } from '../types'
 import { PosterImg } from './PosterImg'
+import { SaveHeartButton } from './SaveHeartButton'
 
 type Props = {
   anime: Anime | null
   predictedRating?: number
   onClose: () => void
+  isSaved: (malId: number) => boolean
+  onToggleSave: (anime: Anime) => void
 }
 
-export function DetailModal({ anime, predictedRating, onClose }: Props) {
+export function DetailModal({
+  anime,
+  predictedRating,
+  onClose,
+  isSaved,
+  onToggleSave,
+}: Props) {
   useEffect(() => {
     if (!anime) return
     const onKey = (e: KeyboardEvent) => {
@@ -49,6 +58,11 @@ export function DetailModal({ anime, predictedRating, onClose }: Props) {
             decoding="async"
           />
           <div className="modal-hero__shade" />
+          <SaveHeartButton
+            saved={isSaved(anime.mal_id)}
+            className="save-heart--on-modal"
+            onToggle={() => onToggleSave(anime)}
+          />
         </div>
         <div className="modal-body">
           <h2 id="modal-title" className="modal-title">

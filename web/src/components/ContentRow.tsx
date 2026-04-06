@@ -12,11 +12,18 @@ function rowSlug(title: string) {
 
 type LoopEntry = { anime: Anime; key: string }
 
+/** How many recommendation cards one arrow click advances (smooth scroll). */
+const ARROW_SCROLL_CARDS = 5
+
 type Props = {
   title: string
   items: Anime[]
   predictedByMalId?: Map<number, number>
   onOpen: (a: Anime) => void
+  isSaved?: (malId: number) => boolean
+  onToggleSave?: (a: Anime) => void
+  /** When false, each title appears once (no triple clone for infinite scroll). Use for Saved. */
+  infiniteLoop?: boolean
 }
 
 /** Instant scroll position; snap is handled by loopJumpScroll when crossing clones */
@@ -50,6 +57,9 @@ export function ContentRow({
   items,
   predictedByMalId,
   onOpen,
+  isSaved,
+  onToggleSave,
+  infiniteLoop = true,
 }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const loopJumpingRef = useRef(false)
@@ -61,16 +71,16 @@ export function ContentRow({
 
   const loopEntries: LoopEntry[] = useMemo(() => {
     if (items.length === 0) return []
-    if (items.length === 1) {
-      return [{ anime: items[0], key: String(items[0].mal_id) }]
+    if (!infiniteLoop || items.length === 1) {
+      return items.map((a) => ({ anime: a, key: String(a.mal_id) }))
     }
     return [...items, ...items, ...items].map((a, i) => ({
       anime: a,
       key: `${a.mal_id}-loop-${i}`,
     }))
-  }, [items])
+  }, [items, infiniteLoop])
 
-  const useInfiniteLoop = items.length > 1
+  const useInfiniteLoop = infiniteLoop && items.length > 1
 
   /* Start in the middle third; double rAF + delayed pass so poster/layout growth updates scrollWidth */
   useLayoutEffect(() => {
@@ -152,7 +162,7 @@ export function ContentRow({
     const g = getComputedStyle(el)
     const gap = parseFloat(g.gap || '0') || 0
     const step = card.offsetWidth + gap
-    el.scrollBy({ left: dir * step, behavior: 'smooth' })
+    el.scrollBy({ left: dir * step * ARROW_SCROLL_CARDS, behavior: 'smooth' })
   }
 
   return (
@@ -168,7 +178,7 @@ export function ContentRow({
           <button
             type="button"
             className="row-arrow"
-            aria-label={`Scroll ${title} left`}
+            aria-label={`Scroll ${title} left by ${ARROW_SCROLL_CARDS} titles`}
             onClick={() => scroll(-1)}
           >
             ‹
@@ -176,7 +186,7 @@ export function ContentRow({
           <button
             type="button"
             className="row-arrow"
-            aria-label={`Scroll ${title} right`}
+            aria-label={`Scroll ${title} right by ${ARROW_SCROLL_CARDS} titles`}
             onClick={() => scroll(1)}
           >
             ›
@@ -190,6 +200,8 @@ export function ContentRow({
             anime={a}
             predictedRating={predictedByMalId?.get(a.mal_id)}
             onOpen={onOpen}
+            saved={isSaved?.(a.mal_id)}
+            onToggleSave={onToggleSave}
           />
         ))}
       </div>
