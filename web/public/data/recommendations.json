@@ -1,0 +1,36 @@
+{
+  "defaultUserId": "viewer-a",
+  "featuredMalId": 9253,
+  "users": {
+    "viewer-a": {
+      "displayName": "Viewer A",
+      "forYou": [
+        { "mal_id": 5114, "predicted_rating": 9.4 },
+        { "mal_id": 9253, "predicted_rating": 9.35 },
+        { "mal_id": 11061, "predicted_rating": 9.2 },
+        { "mal_id": 1535, "predicted_rating": 8.9 },
+        { "mal_id": 32281, "predicted_rating": 8.85 },
+        { "mal_id": 40628, "predicted_rating": 8.7 },
+        { "mal_id": 28851, "predicted_rating": 8.65 },
+        { "mal_id": 4181, "predicted_rating": 8.6 },
+        { "mal_id": 1, "predicted_rating": 8.55 },
+        { "mal_id": 38000, "predicted_rating": 8.5 }
+      ]
+    },
+    "viewer-b": {
+      "displayName": "Viewer B",
+      "forYou": [
+        { "mal_id": 28977, "predicted_rating": 9.1 },
+        { "mal_id": 9969, "predicted_rating": 9.0 },
+        { "mal_id": 15417, "predicted_rating": 8.95 },
+        { "mal_id": 34096, "predicted_rating": 8.9 },
+        { "mal_id": 820, "predicted_rating": 8.85 },
+        { "mal_id": 17074, "predicted_rating": 8.5 },
+        { "mal_id": 37987, "predicted_rating": 8.45 },
+        { "mal_id": 52657, "predicted_rating": 8.4 },
+        { "mal_id": 38524, "predicted_rating": 8.35 },
+        { "mal_id": 457, "predicted_rating": 8.2 }
+      ]
+    }
+  }
+}
