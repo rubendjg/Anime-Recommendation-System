@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { ContentRow } from './components/ContentRow'
 import { DetailModal } from './components/DetailModal'
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
 import { useAnimeData } from './hooks/useAnimeData'
 import { useSavedMalIds } from './hooks/useSavedMalIds'
+import { useUserRatings } from './hooks/useUserRatings'
 import type { Anime } from './types'
 
 function norm(s: string) {
@@ -32,13 +33,18 @@ const TAB_FX_MS = 620
 export default function App() {
   const { status, catalog, byId, recs, err } = useAnimeData()
   const { savedMalIds, isSaved, toggleSave } = useSavedMalIds()
+  const { ratingsByMalId, setUserRating, clearUserRating } = useUserRatings()
   const [userId, setUserId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [genreFilter, setGenreFilter] = useState('')
-  const [activeTab, setActiveTab] = useState<'discover' | 'saved'>('discover')
-  const [tabFx, setTabFx] = useState<'discover' | 'saved' | null>(null)
+  const [activeTab, setActiveTab] = useState<'discover' | 'saved' | 'rated'>(
+    'discover',
+  )
+  const [tabFx, setTabFx] = useState<'discover' | 'saved' | 'rated' | null>(null)
   const [selected, setSelected] = useState<Anime | null>(null)
+  const [ratingAnime, setRatingAnime] = useState<Anime | null>(null)
+  const [ratingDraft, setRatingDraft] = useState('')
 
   const onToggleSaveAnime = useCallback(
     (a: Anime) => {
@@ -46,6 +52,70 @@ export default function App() {
     },
     [toggleSave],
   )
+
+  const onRateAnime = useCallback(
+    (a: Anime) => {
+      const current = ratingsByMalId.get(a.mal_id)
+      setRatingAnime(a)
+      setRatingDraft(current != null ? current.toFixed(1) : '')
+    },
+    [ratingsByMalId],
+  )
+
+  const submitRating = useCallback(() => {
+    if (!ratingAnime) return
+    const raw = ratingDraft.trim()
+    if (!raw) return
+    const n = Number(raw.replace(',', '.'))
+    if (!Number.isFinite(n) || n < 0 || n > 10) {
+      window.alert('Please enter a number between 0 and 10.')
+      return
+    }
+    setUserRating(ratingAnime.mal_id, Math.round(n * 10) / 10)
+    setRatingAnime(null)
+    setRatingDraft('')
+  }, [ratingAnime, ratingDraft, setUserRating])
+
+  const clearRatingFromPopup = useCallback(() => {
+    if (!ratingAnime) return
+    clearUserRating(ratingAnime.mal_id)
+    setRatingAnime(null)
+    setRatingDraft('')
+  }, [ratingAnime, clearUserRating])
+
+  useEffect(() => {
+    if (!ratingAnime) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setRatingAnime(null)
+        return
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        submitRating()
+        return
+      }
+      if (e.key === 'Backspace') {
+        e.preventDefault()
+        setRatingDraft((prev) => prev.slice(0, -1))
+        return
+      }
+      if (/^[0-9]$/.test(e.key) || e.key === '.' || e.key === ',') {
+        e.preventDefault()
+        setRatingDraft((prev) => {
+          const next = `${prev}${e.key === ',' ? '.' : e.key}`
+          if (!/^\d{0,2}(\.\d{0,1})?$/.test(next)) return prev
+          const n = Number(next)
+          if (!Number.isFinite(n)) return next
+          if (n < 0 || n > 10) return prev
+          return next
+        })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [ratingAnime, submitRating])
 
   const savedList = useMemo(() => {
     const out: Anime[] = []
@@ -55,6 +125,15 @@ export default function App() {
     }
     return out
   }, [savedMalIds, byId])
+
+  const ratedList = useMemo(() => {
+    const out: Anime[] = []
+    for (const id of ratingsByMalId.keys()) {
+      const a = byId.get(id)
+      if (a) out.push(a)
+    }
+    return out
+  }, [ratingsByMalId, byId])
 
   const typeOptions = useMemo(
     () => Array.from(new Set(catalog.map((a) => a.type))).sort(),
@@ -78,9 +157,10 @@ export default function App() {
       if (typeFilter && norm(a.type) !== norm(typeFilter)) return false
       if (genreFilter && !genreHas(a, genreFilter)) return false
       if (activeTab === 'saved' && !isSaved(a.mal_id)) return false
+      if (activeTab === 'rated' && !ratingsByMalId.has(a.mal_id)) return false
       return true
     },
-    [query, typeFilter, genreFilter, activeTab, isSaved],
+    [query, typeFilter, genreFilter, activeTab, isSaved, ratingsByMalId],
   )
 
   const effectiveUserId =
@@ -131,7 +211,7 @@ export default function App() {
   const searchHits = useMemo(() => catalog.filter(applyFilters), [catalog, applyFilters])
   const hasSearchQuery = Boolean(query.trim())
   const isFilteringActive = Boolean(
-    query.trim() || typeFilter || genreFilter || activeTab === 'saved',
+    query.trim() || typeFilter || genreFilter || activeTab !== 'discover',
   )
 
   const trending = useMemo(
@@ -165,8 +245,12 @@ export default function App() {
     () => savedList.filter(applyFilters),
     [savedList, applyFilters],
   )
+  const filteredRated = useMemo(
+    () => ratedList.filter(applyFilters),
+    [ratedList, applyFilters],
+  )
 
-  const onTabChangeWithFx = useCallback((next: 'discover' | 'saved') => {
+  const onTabChangeWithFx = useCallback((next: 'discover' | 'saved' | 'rated') => {
     setActiveTab(next)
     setTabFx(next)
     window.setTimeout(() => setTabFx(null), TAB_FX_MS)
@@ -199,6 +283,11 @@ export default function App() {
     selected && predictedMap.has(selected.mal_id)
       ? predictedMap.get(selected.mal_id)
       : undefined
+  const sliderRatingValue = (() => {
+    const n = Number(ratingDraft.replace(',', '.'))
+    if (!Number.isFinite(n)) return 0
+    return Math.max(0, Math.min(10, n))
+  })()
 
   return (
     <div className="app-shell" id="home">
@@ -224,7 +313,7 @@ export default function App() {
         userLabel={profile?.displayName ?? effectiveUserId ?? 'Profile'}
       />
       <main className="app-main">
-        {!hasSearchQuery && activeTab !== 'saved' && (
+        {!hasSearchQuery && activeTab === 'discover' && (
           <div key={`hero-${activeTab}`} className="tab-fade-in">
             <Hero
               slides={spotlightSlides}
@@ -252,10 +341,25 @@ export default function App() {
               title="Saved"
               items={filteredSaved}
               predictedByMalId={predictedMap}
+              userRatingByMalId={ratingsByMalId}
               onOpen={setSelected}
+              onRateAnime={onRateAnime}
               isSaved={isSaved}
               onToggleSave={onToggleSaveAnime}
               infiniteLoop={filteredSaved.length >= SAVED_INFINITE_LOOP_MIN}
+            />
+          )}
+          {activeTab === 'rated' && filteredRated.length > 0 && (
+            <ContentRow
+              title="Rated"
+              items={filteredRated}
+              predictedByMalId={predictedMap}
+              userRatingByMalId={ratingsByMalId}
+              onOpen={setSelected}
+              onRateAnime={onRateAnime}
+              isSaved={isSaved}
+              onToggleSave={onToggleSaveAnime}
+              infiniteLoop={filteredRated.length >= SAVED_INFINITE_LOOP_MIN}
             />
           )}
           {!isFilteringActive && (
@@ -263,17 +367,21 @@ export default function App() {
               title="Matched to your taste"
               items={forYouList}
               predictedByMalId={predictedMap}
+              userRatingByMalId={ratingsByMalId}
               onOpen={setSelected}
+              onRateAnime={onRateAnime}
               isSaved={isSaved}
               onToggleSave={onToggleSaveAnime}
             />
           )}
-          {activeTab !== 'saved' && searchHits.length > 0 && (
+          {activeTab === 'discover' && searchHits.length > 0 && (
             <ContentRow
               title={query.trim() ? `Results for “${query.trim()}”` : 'Filtered results'}
               items={searchHits}
               predictedByMalId={predictedMap}
+              userRatingByMalId={ratingsByMalId}
               onOpen={setSelected}
+              onRateAnime={onRateAnime}
               isSaved={isSaved}
               onToggleSave={onToggleSaveAnime}
               infiniteLoop={false}
@@ -285,6 +393,8 @@ export default function App() {
                 title="Crowd favorites"
                 items={trending}
                 onOpen={setSelected}
+                userRatingByMalId={ratingsByMalId}
+                onRateAnime={onRateAnime}
                 isSaved={isSaved}
                 onToggleSave={onToggleSaveAnime}
               />
@@ -292,6 +402,8 @@ export default function App() {
                 title="Highest scores"
                 items={topRated}
                 onOpen={setSelected}
+                userRatingByMalId={ratingsByMalId}
+                onRateAnime={onRateAnime}
                 isSaved={isSaved}
                 onToggleSave={onToggleSaveAnime}
               />
@@ -299,6 +411,8 @@ export default function App() {
                 title="Action & spectacle"
                 items={actionPicks}
                 onOpen={setSelected}
+                userRatingByMalId={ratingsByMalId}
+                onRateAnime={onRateAnime}
                 isSaved={isSaved}
                 onToggleSave={onToggleSaveAnime}
               />
@@ -306,6 +420,8 @@ export default function App() {
                 title="Drama & heart"
                 items={dramaPicks}
                 onOpen={setSelected}
+                userRatingByMalId={ratingsByMalId}
+                onRateAnime={onRateAnime}
                 isSaved={isSaved}
                 onToggleSave={onToggleSaveAnime}
               />
@@ -330,6 +446,54 @@ export default function App() {
         <div className={`tab-fx tab-fx--${tabFx}`} aria-hidden>
           <div className="tab-fx__core" />
           {tabFx === 'saved' && <div className="tab-fx__heart">♥</div>}
+        </div>
+      )}
+      {ratingAnime && (
+        <div className="rate-pop-root" role="dialog" aria-modal="true" aria-labelledby="rate-pop-title">
+          <button
+            type="button"
+            className="rate-pop-backdrop"
+            aria-label="Close rating popup"
+            onClick={() => setRatingAnime(null)}
+          />
+          <div className="rate-pop-panel">
+            <h3 id="rate-pop-title" className="rate-pop-title">
+              Rate "{ratingAnime.name}"
+            </h3>
+            <p className="rate-pop-help">
+              Drag the bar or type a number (0-10). Press Enter to save.
+            </p>
+            <div className="rate-pop-controls">
+              <input
+                type="range"
+                min={0}
+                max={10}
+                step={0.1}
+                className="rate-pop-slider"
+                value={sliderRatingValue}
+                onChange={(e) => setRatingDraft(e.target.value)}
+                aria-label="Adjust rating with slider"
+                style={
+                  {
+                    '--rate-pct': `${(sliderRatingValue / 10) * 100}%`,
+                  } as CSSProperties
+                }
+                autoFocus
+              />
+              <div className="rate-pop-value">{sliderRatingValue.toFixed(1)}</div>
+            </div>
+            <div className="rate-pop-actions">
+              <button type="button" className="btn btn--ghost" onClick={() => setRatingAnime(null)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn--ghost" onClick={clearRatingFromPopup}>
+                Clear
+              </button>
+              <button type="button" className="btn btn--primary" onClick={submitRating}>
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

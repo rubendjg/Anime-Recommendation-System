@@ -5,7 +5,9 @@ import { SaveHeartButton } from './SaveHeartButton'
 type Props = {
   anime: Anime
   predictedRating?: number
+  userRating?: number
   onOpen: (a: Anime) => void
+  onRate?: (a: Anime) => void
   saved?: boolean
   onToggleSave?: (a: Anime) => void
 }
@@ -13,7 +15,9 @@ type Props = {
 export function AnimeCard({
   anime,
   predictedRating,
+  userRating,
   onOpen,
+  onRate,
   saved = false,
   onToggleSave,
 }: Props) {
@@ -38,8 +42,24 @@ export function AnimeCard({
           loading="lazy"
           decoding="async"
         />
+        {onRate && (
+          <button
+            type="button"
+            className="anime-card__rate-btn anime-card__rate-btn--overlay"
+            onClick={(e) => {
+              e.stopPropagation()
+              onRate(anime)
+            }}
+            aria-label={`Rate ${anime.name}`}
+          >
+            Rate
+          </button>
+        )}
         {predictedRating != null && (
           <span className="anime-card__badge">{predictedRating.toFixed(1)}</span>
+        )}
+        {userRating != null && (
+          <span className="anime-card__user-badge">You: {userRating.toFixed(1)}</span>
         )}
         {onToggleSave && (
           <SaveHeartButton

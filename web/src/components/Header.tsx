@@ -7,8 +7,8 @@ type Props = {
   onTypeFilter: (v: string) => void
   genreFilter: string
   onGenreFilter: (v: string) => void
-  activeTab: 'discover' | 'saved'
-  onTabChange: (tab: 'discover' | 'saved') => void
+  activeTab: 'discover' | 'saved' | 'rated'
+  onTabChange: (tab: 'discover' | 'saved' | 'rated') => void
   onResetFilters: () => void
   typeOptions: string[]
   genreOptions: string[]
@@ -55,6 +55,13 @@ export function Header({
           onClick={() => onTabChange('saved')}
         >
           Saved
+        </button>
+        <button
+          type="button"
+          className={`nav-link nav-link--button${activeTab === 'rated' ? ' is-active' : ''}`}
+          onClick={() => onTabChange('rated')}
+        >
+          Rated
         </button>
       </nav>
       <div className="app-header__tools">

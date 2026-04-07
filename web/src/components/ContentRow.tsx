@@ -19,7 +19,9 @@ type Props = {
   title: string
   items: Anime[]
   predictedByMalId?: Map<number, number>
+  userRatingByMalId?: Map<number, number>
   onOpen: (a: Anime) => void
+  onRateAnime?: (a: Anime) => void
   isSaved?: (malId: number) => boolean
   onToggleSave?: (a: Anime) => void
   /** When false, each title appears once (no triple clone for infinite scroll). Use for Saved. */
@@ -56,7 +58,9 @@ export function ContentRow({
   title,
   items,
   predictedByMalId,
+  userRatingByMalId,
   onOpen,
+  onRateAnime,
   isSaved,
   onToggleSave,
   infiniteLoop = true,
@@ -199,7 +203,9 @@ export function ContentRow({
             key={key}
             anime={a}
             predictedRating={predictedByMalId?.get(a.mal_id)}
+            userRating={userRatingByMalId?.get(a.mal_id)}
             onOpen={onOpen}
+            onRate={onRateAnime}
             saved={isSaved?.(a.mal_id)}
             onToggleSave={onToggleSave}
           />
