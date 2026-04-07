@@ -6,5 +6,9 @@ numpy==1.26.4
 pandas==1.5.3
 seaborn==0.11.2
 surprise
-recmetrics
 scikit-learn
+recmetrics
+sentence-transformers
+spacy==3.8.9
+# English pipeline for spacy.load("en_core_web_sm") (paired with spaCy 3.8.x)
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
