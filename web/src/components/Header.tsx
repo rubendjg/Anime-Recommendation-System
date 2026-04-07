@@ -3,6 +3,15 @@ type ProfileOption = { id: string; label: string }
 type Props = {
   query: string
   onQuery: (q: string) => void
+  typeFilter: string
+  onTypeFilter: (v: string) => void
+  genreFilter: string
+  onGenreFilter: (v: string) => void
+  activeTab: 'discover' | 'saved'
+  onTabChange: (tab: 'discover' | 'saved') => void
+  onResetFilters: () => void
+  typeOptions: string[]
+  genreOptions: string[]
   profiles: ProfileOption[]
   userId: string
   onUserId: (id: string) => void
@@ -12,6 +21,15 @@ type Props = {
 export function Header({
   query,
   onQuery,
+  typeFilter,
+  onTypeFilter,
+  genreFilter,
+  onGenreFilter,
+  activeTab,
+  onTabChange,
+  onResetFilters,
+  typeOptions,
+  genreOptions,
   profiles,
   userId,
   onUserId,
@@ -24,11 +42,20 @@ export function Header({
         <span className="logo-tag">reco</span>
       </div>
       <nav className="app-header__nav" aria-label="Primary">
-        <a href="#home" className="nav-link is-active">
+        <button
+          type="button"
+          className={`nav-link nav-link--button${activeTab === 'discover' ? ' is-active' : ''}`}
+          onClick={() => onTabChange('discover')}
+        >
           Discover
-        </a>
-        <span className="nav-link nav-link--muted">Studios</span>
-        <span className="nav-link nav-link--muted">Saved</span>
+        </button>
+        <button
+          type="button"
+          className={`nav-link nav-link--button${activeTab === 'saved' ? ' is-active' : ''}`}
+          onClick={() => onTabChange('saved')}
+        >
+          Saved
+        </button>
       </nav>
       <div className="app-header__tools">
         <label className="search-wrap">
@@ -42,6 +69,45 @@ export function Header({
             autoComplete="off"
           />
         </label>
+        <label className="filter-select-wrap">
+          <span className="visually-hidden">Filter by type</span>
+          <select
+            className="filter-select"
+            value={typeFilter}
+            onChange={(e) => onTypeFilter(e.target.value)}
+          >
+            <option value="">All types</option>
+            {typeOptions.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="filter-select-wrap">
+          <span className="visually-hidden">Filter by genre</span>
+          <select
+            className="filter-select"
+            value={genreFilter}
+            onChange={(e) => onGenreFilter(e.target.value)}
+          >
+            <option value="">All genres</option>
+            {genreOptions.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="filter-refresh-btn"
+          onClick={onResetFilters}
+          aria-label="Reset search and filters"
+          title="Reset filters"
+        >
+          Refresh
+        </button>
         <label className="profile-select-wrap">
           <span className="visually-hidden">Active profile</span>
           <select

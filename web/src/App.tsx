@@ -12,7 +12,7 @@ function norm(s: string) {
 }
 
 function matchesQuery(anime: Anime, q: string) {
-  if (!q) return false
+  if (!q) return true
   const n = norm(q)
   return (
     norm(anime.name).includes(n) ||
@@ -27,12 +27,17 @@ function genreHas(anime: Anime, g: string) {
 
 /** Below this count, Saved shows each title once; at or above, use the same infinite strip as other rows. */
 const SAVED_INFINITE_LOOP_MIN = 5
+const TAB_FX_MS = 620
 
 export default function App() {
   const { status, catalog, byId, recs, err } = useAnimeData()
   const { savedMalIds, isSaved, toggleSave } = useSavedMalIds()
   const [userId, setUserId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [genreFilter, setGenreFilter] = useState('')
+  const [activeTab, setActiveTab] = useState<'discover' | 'saved'>('discover')
+  const [tabFx, setTabFx] = useState<'discover' | 'saved' | null>(null)
   const [selected, setSelected] = useState<Anime | null>(null)
 
   const onToggleSaveAnime = useCallback(
@@ -50,6 +55,33 @@ export default function App() {
     }
     return out
   }, [savedMalIds, byId])
+
+  const typeOptions = useMemo(
+    () => Array.from(new Set(catalog.map((a) => a.type))).sort(),
+    [catalog],
+  )
+
+  const genreOptions = useMemo(() => {
+    const s = new Set<string>()
+    for (const a of catalog) {
+      for (const g of a.genres.split(',')) {
+        const t = g.trim()
+        if (t) s.add(t)
+      }
+    }
+    return Array.from(s).sort()
+  }, [catalog])
+
+  const applyFilters = useCallback(
+    (a: Anime) => {
+      if (!matchesQuery(a, query)) return false
+      if (typeFilter && norm(a.type) !== norm(typeFilter)) return false
+      if (genreFilter && !genreHas(a, genreFilter)) return false
+      if (activeTab === 'saved' && !isSaved(a.mal_id)) return false
+      return true
+    },
+    [query, typeFilter, genreFilter, activeTab, isSaved],
+  )
 
   const effectiveUserId =
     userId ??
@@ -96,26 +128,49 @@ export default function App() {
     return out.slice(0, 10)
   }, [recs, byId, forYouList, catalog, predictedMap])
 
-  const searchHits = useMemo(() => {
-    if (!query.trim()) return []
-    return catalog.filter((a) => matchesQuery(a, query)).slice(0, 24)
-  }, [catalog, query])
+  const searchHits = useMemo(() => catalog.filter(applyFilters), [catalog, applyFilters])
+  const hasSearchQuery = Boolean(query.trim())
+  const isFilteringActive = Boolean(
+    query.trim() || typeFilter || genreFilter || activeTab === 'saved',
+  )
 
-  const trending = useMemo(() => {
-    return [...catalog].sort((a, b) => b.members - a.members).slice(0, 16)
-  }, [catalog])
+  const trending = useMemo(
+    () =>
+      [...catalog]
+        .sort((a, b) => b.members - a.members)
+        .filter(applyFilters)
+        .slice(0, 16),
+    [catalog, applyFilters],
+  )
 
-  const topRated = useMemo(() => {
-    return [...catalog].sort((a, b) => b.score - a.score).slice(0, 16)
-  }, [catalog])
+  const topRated = useMemo(
+    () =>
+      [...catalog]
+        .sort((a, b) => b.score - a.score)
+        .filter(applyFilters)
+        .slice(0, 16),
+    [catalog, applyFilters],
+  )
 
-  const actionPicks = useMemo(() => {
-    return catalog.filter((a) => genreHas(a, 'action')).slice(0, 16)
-  }, [catalog])
+  const actionPicks = useMemo(
+    () => catalog.filter((a) => genreHas(a, 'action')).filter(applyFilters).slice(0, 16),
+    [catalog, applyFilters],
+  )
 
-  const dramaPicks = useMemo(() => {
-    return catalog.filter((a) => genreHas(a, 'drama')).slice(0, 16)
-  }, [catalog])
+  const dramaPicks = useMemo(
+    () => catalog.filter((a) => genreHas(a, 'drama')).filter(applyFilters).slice(0, 16),
+    [catalog, applyFilters],
+  )
+  const filteredSaved = useMemo(
+    () => savedList.filter(applyFilters),
+    [savedList, applyFilters],
+  )
+
+  const onTabChangeWithFx = useCallback((next: 'discover' | 'saved') => {
+    setActiveTab(next)
+    setTabFx(next)
+    window.setTimeout(() => setTabFx(null), TAB_FX_MS)
+  }, [])
 
   const profileOptions = recs
     ? Object.entries(recs.users).map(([id, u]) => ({
@@ -150,76 +205,112 @@ export default function App() {
       <Header
         query={query}
         onQuery={setQuery}
+        typeFilter={typeFilter}
+        onTypeFilter={setTypeFilter}
+        genreFilter={genreFilter}
+        onGenreFilter={setGenreFilter}
+        activeTab={activeTab}
+        onTabChange={onTabChangeWithFx}
+        onResetFilters={() => {
+          setQuery('')
+          setTypeFilter('')
+          setGenreFilter('')
+        }}
+        typeOptions={typeOptions}
+        genreOptions={genreOptions}
         profiles={profileOptions}
         userId={effectiveUserId ?? profileOptions[0]?.id ?? ''}
         onUserId={setUserId}
         userLabel={profile?.displayName ?? effectiveUserId ?? 'Profile'}
       />
       <main className="app-main">
-        <Hero
-          slides={spotlightSlides}
-          onOpenDetails={(anime) => setSelected(anime)}
-          isSaved={isSaved}
-          onToggleSave={onToggleSaveAnime}
-        />
-        <div className="rows-wrap">
-          {savedList.length > 0 && (
+        {!hasSearchQuery && activeTab !== 'saved' && (
+          <div key={`hero-${activeTab}`} className="tab-fade-in">
+            <Hero
+              slides={spotlightSlides}
+              onOpenDetails={(anime) => setSelected(anime)}
+              isSaved={isSaved}
+              onToggleSave={onToggleSaveAnime}
+            />
+          </div>
+        )}
+        <div
+          key={`rows-${activeTab}-${hasSearchQuery ? 'search' : 'base'}`}
+          className={`rows-wrap tab-fade-in${hasSearchQuery ? ' rows-wrap--search' : ''}`}
+        >
+          {isFilteringActive && (
+            <section className="results-header" aria-live="polite">
+              <p className="results-header__eyebrow">Search</p>
+              <h2 className="results-header__title">
+                {hasSearchQuery ? `Results for "${query.trim()}"` : 'Filtered results'}
+              </h2>
+              <p className="results-header__meta">{searchHits.length} matches</p>
+            </section>
+          )}
+          {activeTab === 'saved' && filteredSaved.length > 0 && (
             <ContentRow
               title="Saved"
-              items={savedList}
+              items={filteredSaved}
               predictedByMalId={predictedMap}
               onOpen={setSelected}
               isSaved={isSaved}
               onToggleSave={onToggleSaveAnime}
-              infiniteLoop={savedList.length >= SAVED_INFINITE_LOOP_MIN}
+              infiniteLoop={filteredSaved.length >= SAVED_INFINITE_LOOP_MIN}
             />
           )}
-          <ContentRow
-            title="Matched to your taste"
-            items={forYouList}
-            predictedByMalId={predictedMap}
-            onOpen={setSelected}
-            isSaved={isSaved}
-            onToggleSave={onToggleSaveAnime}
-          />
-          {searchHits.length > 0 && (
+          {!isFilteringActive && (
             <ContentRow
-              title={`Results for “${query.trim()}”`}
+              title="Matched to your taste"
+              items={forYouList}
+              predictedByMalId={predictedMap}
+              onOpen={setSelected}
+              isSaved={isSaved}
+              onToggleSave={onToggleSaveAnime}
+            />
+          )}
+          {activeTab !== 'saved' && searchHits.length > 0 && (
+            <ContentRow
+              title={query.trim() ? `Results for “${query.trim()}”` : 'Filtered results'}
               items={searchHits}
               predictedByMalId={predictedMap}
               onOpen={setSelected}
               isSaved={isSaved}
               onToggleSave={onToggleSaveAnime}
+              infiniteLoop={false}
             />
           )}
-          <ContentRow
-            title="Crowd favorites"
-            items={trending}
-            onOpen={setSelected}
-            isSaved={isSaved}
-            onToggleSave={onToggleSaveAnime}
-          />
-          <ContentRow
-            title="Highest scores"
-            items={topRated}
-            onOpen={setSelected}
-            isSaved={isSaved}
-            onToggleSave={onToggleSaveAnime}
-          />
-          <ContentRow
-            title="Action & spectacle"
-            items={actionPicks}
-            onOpen={setSelected}
-            isSaved={isSaved}
-            onToggleSave={onToggleSaveAnime}
-          />
-          <ContentRow
-            title="Drama & heart"
-            items={dramaPicks}
-            onOpen={setSelected}
-            isSaved={isSaved}
-            onToggleSave={onToggleSaveAnime}
-          />
+          {!isFilteringActive && (
+            <>
+              <ContentRow
+                title="Crowd favorites"
+                items={trending}
+                onOpen={setSelected}
+                isSaved={isSaved}
+                onToggleSave={onToggleSaveAnime}
+              />
+              <ContentRow
+                title="Highest scores"
+                items={topRated}
+                onOpen={setSelected}
+                isSaved={isSaved}
+                onToggleSave={onToggleSaveAnime}
+              />
+              <ContentRow
+                title="Action & spectacle"
+                items={actionPicks}
+                onOpen={setSelected}
+                isSaved={isSaved}
+                onToggleSave={onToggleSaveAnime}
+              />
+              <ContentRow
+                title="Drama & heart"
+                items={dramaPicks}
+                onOpen={setSelected}
+                isSaved={isSaved}
+                onToggleSave={onToggleSaveAnime}
+              />
+            </>
+          )}
         </div>
       </main>
       <footer className="app-footer">
@@ -235,6 +326,12 @@ export default function App() {
         isSaved={isSaved}
         onToggleSave={onToggleSaveAnime}
       />
+      {tabFx && (
+        <div className={`tab-fx tab-fx--${tabFx}`} aria-hidden>
+          <div className="tab-fx__core" />
+          {tabFx === 'saved' && <div className="tab-fx__heart">♥</div>}
+        </div>
+      )}
     </div>
   )
 }
