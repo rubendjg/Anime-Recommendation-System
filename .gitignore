@@ -95,3 +95,5 @@ __pycache__/
 .ipynb_checkpoints/
 
 context/
+
+.DS_Store
