@@ -1,5 +1,4 @@
 type ProfileOption = { id: string; label: string }
-type ModelOption = { id: string; label: string }
 
 type Props = {
   query: string
@@ -17,9 +16,6 @@ type Props = {
   userId: string
   onUserId: (id: string) => void
   userLabel: string
-  models: ModelOption[]
-  modelId: string
-  onModelId: (id: string) => void
 }
 
 export function Header({
@@ -38,9 +34,6 @@ export function Header({
   userId,
   onUserId,
   userLabel,
-  models,
-  modelId,
-  onModelId,
 }: Props) {
   return (
     <header className="app-header">
@@ -133,21 +126,6 @@ export function Header({
             {profiles.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="profile-select-wrap">
-          <span className="visually-hidden">Recommendation model</span>
-          <select
-            className="profile-select"
-            value={modelId}
-            onChange={(e) => onModelId(e.target.value)}
-            aria-label="Recommendation model"
-          >
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
               </option>
             ))}
           </select>
