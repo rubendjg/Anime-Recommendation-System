@@ -18,7 +18,6 @@ const ARROW_SCROLL_CARDS = 5
 type Props = {
   title: string
   items: Anime[]
-  predictedByMalId?: Map<number, number>
   userRatingByMalId?: Map<number, number>
   onOpen: (a: Anime) => void
   onRateAnime?: (a: Anime) => void
@@ -57,7 +56,6 @@ function loopJumpScroll(
 export function ContentRow({
   title,
   items,
-  predictedByMalId,
   userRatingByMalId,
   onOpen,
   onRateAnime,
@@ -202,7 +200,6 @@ export function ContentRow({
           <AnimeCard
             key={key}
             anime={a}
-            predictedRating={predictedByMalId?.get(a.mal_id)}
             userRating={userRatingByMalId?.get(a.mal_id)}
             onOpen={onOpen}
             onRate={onRateAnime}

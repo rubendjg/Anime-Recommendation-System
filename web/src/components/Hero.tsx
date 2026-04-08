@@ -3,6 +3,7 @@ import {
   extractHeroPaletteFromImageUrl,
   type HeroPaletteCss,
 } from '../heroPalette'
+import { resolveJikanLargeImage } from '../jikanPoster'
 import {
   animePosterUrl,
   DEFAULT_ANIME_POSTER_URL,
@@ -13,11 +14,11 @@ import { SaveHeartButton } from './SaveHeartButton'
 
 export type SpotlightSlide = {
   anime: Anime
-  predictedRating?: number
 }
 
 type Props = {
   slides: SpotlightSlide[]
+  userRatingByMalId: Map<number, number>
   onOpenDetails: (anime: Anime) => void
   isSaved: (malId: number) => boolean
   onToggleSave: (anime: Anime) => void
@@ -42,6 +43,7 @@ function PeekPoster({
     <div className={`hero__peek hero__peek--${tier}`}>
       <PosterImg
         imageUrl={slide.anime.image_url}
+        malId={slide.anime.mal_id}
         className="hero__peek-img"
         loading="lazy"
         decoding="async"
@@ -50,7 +52,13 @@ function PeekPoster({
   )
 }
 
-export function Hero({ slides, onOpenDetails, isSaved, onToggleSave }: Props) {
+export function Hero({
+  slides,
+  userRatingByMalId,
+  onOpenDetails,
+  isSaved,
+  onToggleSave,
+}: Props) {
   const [activeIdx, setActiveIdx] = useState(0)
   const [loadedBackdrop, setLoadedBackdrop] = useState<{
     malId: number
@@ -108,24 +116,41 @@ export function Hero({ slides, onOpenDetails, isSaved, onToggleSave }: Props) {
 
   const n = slides.length
   const active = slides[activeIdx]
-  const { anime, predictedRating } = active
+  const { anime } = active
+  const userRating = userRatingByMalId.get(anime.mal_id)
   const multi = n > 1
 
   useEffect(() => {
     let cancelled = false
     const id = anime.mal_id
-    const poster = animePosterUrl(anime.image_url)
-    if (!anime.image_url?.trim() || poster === DEFAULT_ANIME_POSTER_URL) {
-      setLoadedBackdrop(null)
-      return () => {
-        cancelled = true
+    ;(async () => {
+      let poster: string
+      const trimmed = anime.image_url?.trim() ?? ''
+      if (trimmed) {
+        poster = animePosterUrl(anime.image_url)
+        if (poster === DEFAULT_ANIME_POSTER_URL) {
+          const j = await resolveJikanLargeImage(id)
+          if (cancelled) return
+          if (!j) {
+            setLoadedBackdrop(null)
+            return
+          }
+          poster = animePosterUrl(j)
+        }
+      } else {
+        const j = await resolveJikanLargeImage(id)
+        if (cancelled) return
+        if (!j) {
+          setLoadedBackdrop(null)
+          return
+        }
+        poster = animePosterUrl(j)
       }
-    }
-    extractHeroPaletteFromImageUrl(poster).then((p) => {
+      const p = await extractHeroPaletteFromImageUrl(poster)
       if (cancelled) return
       if (p) setLoadedBackdrop({ malId: id, palette: p })
       else setLoadedBackdrop(null)
-    })
+    })()
     return () => {
       cancelled = true
     }
@@ -163,6 +188,7 @@ export function Hero({ slides, onOpenDetails, isSaved, onToggleSave }: Props) {
         <PosterImg
           key={anime.mal_id}
           imageUrl={anime.image_url}
+          malId={anime.mal_id}
           className="hero__bg-blur-img"
           decoding="async"
         />
@@ -187,6 +213,7 @@ export function Hero({ slides, onOpenDetails, isSaved, onToggleSave }: Props) {
                 <div className="hero__frame">
                   <PosterImg
                     imageUrl={anime.image_url}
+                    malId={anime.mal_id}
                     className="hero__poster"
                     decoding="async"
                   />
@@ -201,12 +228,17 @@ export function Hero({ slides, onOpenDetails, isSaved, onToggleSave }: Props) {
                 <p className="hero__eyebrow">Tonight&apos;s spotlight</p>
                 <h1 className="hero__title">{anime.name}</h1>
                 <div className="hero__meta">
-                  <span className="hero__pill hero__pill--score">
-                    ★ {anime.score.toFixed(1)}
-                  </span>
-                  {predictedRating != null && (
-                    <span className="hero__pill hero__pill--model">
-                      Model {predictedRating.toFixed(1)}
+                  {!anime.catalogMissing && Number.isFinite(anime.score) && (
+                    <span
+                      className="hero__pill hero__pill--score"
+                      title="Average score from the community (catalog)"
+                    >
+                      Community {anime.score.toFixed(1)}
+                    </span>
+                  )}
+                  {userRating != null && (
+                    <span className="hero__pill hero__pill--user" title="Your rating">
+                      You {userRating.toFixed(1)}
                     </span>
                   )}
                   <span className="hero__pill">{anime.type}</span>

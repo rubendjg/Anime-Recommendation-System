@@ -4,7 +4,6 @@ import { SaveHeartButton } from './SaveHeartButton'
 
 type Props = {
   anime: Anime
-  predictedRating?: number
   userRating?: number
   onOpen: (a: Anime) => void
   onRate?: (a: Anime) => void
@@ -14,13 +13,15 @@ type Props = {
 
 export function AnimeCard({
   anime,
-  predictedRating,
   userRating,
   onOpen,
   onRate,
   saved = false,
   onToggleSave,
 }: Props) {
+  const malOk = Number.isFinite(anime.score) && !anime.catalogMissing
+  const showScores = malOk || userRating != null
+
   return (
     <div
       className="anime-card"
@@ -38,6 +39,7 @@ export function AnimeCard({
       <div className="anime-card__poster">
         <PosterImg
           imageUrl={anime.image_url}
+          malId={anime.mal_id}
           className="anime-card__img"
           loading="lazy"
           decoding="async"
@@ -55,11 +57,25 @@ export function AnimeCard({
             Rate
           </button>
         )}
-        {predictedRating != null && (
-          <span className="anime-card__badge">{predictedRating.toFixed(1)}</span>
-        )}
-        {userRating != null && (
-          <span className="anime-card__user-badge">You: {userRating.toFixed(1)}</span>
+        {showScores && (
+          <div
+            className="anime-card__scores-inline"
+            title="Community average score (catalog) and your rating"
+          >
+            {malOk && (
+              <span className="anime-card__scores-community">
+                Community {anime.score.toFixed(1)}
+              </span>
+            )}
+            {malOk && userRating != null && (
+              <span className="anime-card__scores-sep" aria-hidden>
+                ·
+              </span>
+            )}
+            {userRating != null && (
+              <span className="anime-card__scores-you">You {userRating.toFixed(1)}</span>
+            )}
+          </div>
         )}
         {onToggleSave && (
           <SaveHeartButton
@@ -72,7 +88,9 @@ export function AnimeCard({
       <div className="anime-card__caption">
         <span className="anime-card__title">{anime.name}</span>
         <span className="anime-card__sub">
-          {anime.type} · ★ {anime.score.toFixed(1)}
+          {anime.catalogMissing
+            ? `MAL #${anime.mal_id} · not in catalog`
+            : `${anime.type} · Community ${anime.score.toFixed(1)}`}
         </span>
       </div>
     </div>

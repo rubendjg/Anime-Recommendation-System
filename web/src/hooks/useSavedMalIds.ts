@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-const STORAGE_KEY = 'hanami.saved-mal-ids'
+const STORAGE_PREFIX = 'hanami.saved-mal-ids'
+/** Pre–per-profile builds used this single key for everyone. */
+const LEGACY_GLOBAL_KEY = 'hanami.saved-mal-ids'
 
-function readStored(): number[] {
+function parseStored(raw: string | null): number[] {
+  if (!raw) return []
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
     return parsed.filter((x): x is number => typeof x === 'number')
@@ -14,15 +15,33 @@ function readStored(): number[] {
   }
 }
 
+function readStored(storageKey: string): number[] {
+  const fromKey = parseStored(localStorage.getItem(storageKey))
+  if (fromKey.length > 0) return fromKey
+  const legacy = parseStored(localStorage.getItem(LEGACY_GLOBAL_KEY))
+  if (legacy.length > 0) {
+    localStorage.setItem(storageKey, JSON.stringify(legacy))
+    localStorage.removeItem(LEGACY_GLOBAL_KEY)
+    return legacy
+  }
+  return []
+}
+
 /**
- * Ordered list of saved anime (MAL ids), persisted in localStorage.
+ * Ordered list of saved anime (MAL ids), persisted per profile under
+ * `hanami.saved-mal-ids.<profileKey>` (same idea as `useUserRatings`).
  */
-export function useSavedMalIds() {
-  const [order, setOrder] = useState<number[]>(readStored)
+export function useSavedMalIds(profileKey: string) {
+  const storageKey = `${STORAGE_PREFIX}.${profileKey}`
+  const [order, setOrder] = useState<number[]>(() => readStored(storageKey))
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(order))
-  }, [order])
+    setOrder(readStored(storageKey))
+  }, [storageKey])
+
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(order))
+  }, [order, storageKey])
 
   const savedSet = useMemo(() => new Set(order), [order])
 
