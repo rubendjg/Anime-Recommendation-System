@@ -764,10 +764,12 @@ code {
 }
 
 .hero__layout--spotlight .hero__synopsis {
-  display: block;
-  overflow: visible;
-  -webkit-line-clamp: unset;
-  -webkit-box-orient: unset;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
   word-break: normal;
   overflow-wrap: break-word;
   hyphens: manual;
@@ -982,10 +984,10 @@ code {
   background: rgba(251, 191, 36, 0.08);
 }
 
-.hero__pill--model {
-  color: var(--teal);
-  border-color: var(--teal-dim);
-  background: rgba(45, 212, 191, 0.08);
+.hero__pill--user {
+  color: var(--coral);
+  border-color: var(--coral-dim);
+  background: rgba(244, 114, 182, 0.1);
 }
 
 .hero__synopsis {
@@ -1080,6 +1082,11 @@ code {
 }
 
 .rows-wrap--search {
+  margin-top: calc(var(--header-h) + 0.6rem);
+}
+
+/* Saved / Rated: no hero — align first row below fixed header like search mode */
+.rows-wrap--below-header {
   margin-top: calc(var(--header-h) + 0.6rem);
 }
 
@@ -1249,32 +1256,37 @@ code {
   background: linear-gradient(145deg, #2a2540, #1a1628);
 }
 
-.anime-card__badge {
+.anime-card__scores-inline {
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 2;
-  padding: 0.2rem 0.45rem;
+  max-width: calc(100% - 3rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem 0.35rem;
+  padding: 0.25rem 0.45rem;
   border-radius: 8px;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  background: rgba(10, 9, 18, 0.88);
-  color: var(--teal);
-  border: 1px solid var(--teal-dim);
+  line-height: 1.2;
+  background: rgba(10, 9, 18, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.anime-card__user-badge {
-  position: absolute;
-  top: 8px;
-  right: 58px;
-  z-index: 2;
-  padding: 0.2rem 0.45rem;
-  border-radius: 8px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  background: rgba(10, 9, 18, 0.88);
+.anime-card__scores-community {
+  color: #f5d78e;
+}
+
+.anime-card__scores-sep {
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 500;
+}
+
+.anime-card__scores-you {
   color: var(--coral);
-  border: 1px solid var(--coral-dim);
 }
 
 /* ——— Save (heart) ——— */
@@ -1684,8 +1696,8 @@ code {
   margin-bottom: 0.65rem;
 }
 
-.modal-meta__pred {
-  color: var(--teal);
+.modal-meta__user-rating {
+  color: var(--coral);
   font-weight: 600;
 }
 

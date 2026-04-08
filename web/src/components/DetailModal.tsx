@@ -5,7 +5,8 @@ import { SaveHeartButton } from './SaveHeartButton'
 
 type Props = {
   anime: Anime | null
-  predictedRating?: number
+  /** Logged-in profile / local rating when the user has scored this title. */
+  userRating?: number
   onClose: () => void
   isSaved: (malId: number) => boolean
   onToggleSave: (anime: Anime) => void
@@ -13,7 +14,7 @@ type Props = {
 
 export function DetailModal({
   anime,
-  predictedRating,
+  userRating,
   onClose,
   isSaved,
   onToggleSave,
@@ -54,6 +55,7 @@ export function DetailModal({
         <div className="modal-hero">
           <PosterImg
             imageUrl={anime.image_url}
+            malId={anime.mal_id}
             className="modal-hero__img"
             decoding="async"
           />
@@ -69,15 +71,21 @@ export function DetailModal({
             {anime.name}
           </h2>
           <div className="modal-meta">
-            <span>★ {anime.score.toFixed(1)}</span>
-            {predictedRating != null && (
-              <span className="modal-meta__pred">
-                Your model: {predictedRating.toFixed(1)}
+            {!anime.catalogMissing && Number.isFinite(anime.score) && (
+              <span title="Average score from the community (catalog)">
+                Community {anime.score.toFixed(1)}
+              </span>
+            )}
+            {userRating != null && (
+              <span className="modal-meta__user-rating">
+                You {userRating.toFixed(1)}
               </span>
             )}
             <span>{anime.type}</span>
             <span>{anime.episodes} episodes</span>
-            <span>{(anime.members / 1e6).toFixed(2)}M members</span>
+            {!anime.catalogMissing && (
+              <span>{(anime.members / 1e6).toFixed(2)}M members</span>
+            )}
           </div>
           <p className="modal-genres">{anime.genres}</p>
           <p className="modal-synopsis">{anime.synopsis}</p>
