@@ -103,6 +103,25 @@ Interactions where `rating == 0` (user watched/planned but didn't rate), useful 
 - **User bias normalization** is recommended given the skewed rating behavior
 - All processed datasets must be generated locally — download the raw CSVs from Kaggle and run the notebook
 
+## Refresh Offline Frontend Recommendations
+
+The frontend is fully static and reads recommendation artifacts from `web/public/data/recommendations.json`.
+To regenerate those recommendations from notebook-trained models (`CF`, `content`, `hybrid`, `popular`, `random`):
+
+1. Run `modeling/modeling.ipynb` through the cells that train/fit:
+   - `algo` (SVD collaborative filtering)
+   - `tfidf` (content-based model)
+   - `meta` (metadata model used in hybrid)
+   - `popular` and `random`
+2. Run the export helper cell at the end of the notebook:
+   - `export_frontend_data(top_n=16, n_demo_users=2, seed=42)`
+3. Confirm the exported file exists:
+   - `web/public/data/recommendations.json`
+4. Build frontend assets:
+   - `cd web && npm install && npm run build`
+
+The export helper validates that recommended `mal_id` values exist in the catalog and applies fallbacks so the UI remains usable even if one model has sparse outputs.
+
 ## Data Source
 
 [Anime Recommendation Database 2020](https://www.kaggle.com/datasets/hernan4444/anime-recommendation-database-2020) by Hernan4444 on Kaggle.

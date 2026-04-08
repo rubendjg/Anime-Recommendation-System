@@ -6,7 +6,7 @@ import { Hero } from './components/Hero'
 import { useAnimeData } from './hooks/useAnimeData'
 import { useSavedMalIds } from './hooks/useSavedMalIds'
 import { useUserRatings } from './hooks/useUserRatings'
-import type { Anime } from './types'
+import type { Anime, ModelKey } from './types'
 
 function norm(s: string) {
   return s.toLowerCase().trim()
@@ -29,12 +29,22 @@ function genreHas(anime: Anime, g: string) {
 /** Below this count, Saved shows each title once; at or above, use the same infinite strip as other rows. */
 const SAVED_INFINITE_LOOP_MIN = 5
 const TAB_FX_MS = 620
+const FALLBACK_MODEL_ORDER: ModelKey[] = ['hybrid', 'cf', 'content', 'popular', 'random']
+
+function prettyModelName(k: ModelKey) {
+  if (k === 'cf') return 'Collaborative Filtering'
+  if (k === 'content') return 'Content-Based'
+  if (k === 'hybrid') return 'Hybrid'
+  if (k === 'popular') return 'Popular'
+  return 'Random'
+}
 
 export default function App() {
   const { status, catalog, byId, recs, err } = useAnimeData()
   const { savedMalIds, isSaved, toggleSave } = useSavedMalIds()
   const { ratingsByMalId, setUserRating, clearUserRating } = useUserRatings()
   const [userId, setUserId] = useState<string | null>(null)
+  const [modelId, setModelId] = useState<ModelKey | null>(null)
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [genreFilter, setGenreFilter] = useState('')
@@ -169,18 +179,65 @@ export default function App() {
     (recs ? Object.keys(recs.users)[0] : null)
 
   const profile = effectiveUserId ? recs?.users[effectiveUserId] : undefined
+  const modelOrder = recs?.modelOrder?.length ? recs.modelOrder : FALLBACK_MODEL_ORDER
+
+  const availableModelIds = useMemo(() => {
+    if (!profile) return [] as ModelKey[]
+    const fromOrder = modelOrder.filter((k) => {
+      const entries = profile.models[k]?.forYou
+      return Array.isArray(entries) && entries.length > 0
+    })
+    const extra = (Object.keys(profile.models) as ModelKey[]).filter(
+      (k) => !fromOrder.includes(k),
+    )
+    return [...fromOrder, ...extra]
+  }, [profile, modelOrder])
+
+  const effectiveModelId =
+    (modelId && availableModelIds.includes(modelId) ? modelId : null) ??
+    (recs?.defaultModelKey && availableModelIds.includes(recs.defaultModelKey)
+      ? recs.defaultModelKey
+      : null) ??
+    availableModelIds[0] ??
+    'hybrid'
+
+  useEffect(() => {
+    if (!availableModelIds.length) return
+    if (!modelId || !availableModelIds.includes(modelId)) {
+      setModelId(effectiveModelId)
+    }
+  }, [availableModelIds, modelId, effectiveModelId])
+
+  const activeModel = profile?.models[effectiveModelId]
 
   const predictedMap = useMemo(() => {
     const m = new Map<number, number>()
-    if (!profile) return m
-    for (const e of profile.forYou) m.set(e.mal_id, e.predicted_rating)
+    const entries = activeModel?.forYou ?? []
+    for (const e of entries) m.set(e.mal_id, e.predicted_rating)
+    return m
+  }, [activeModel])
+
+  const forYouList = useMemo(() => {
+    const entries = activeModel?.forYou ?? []
+    const out: Anime[] = []
+    for (const e of entries) {
+      const a = byId.get(e.mal_id)
+      if (a) out.push(a)
+    }
+    return out
+  }, [activeModel, byId])
+
+  const historyRatingMap = useMemo(() => {
+    const m = new Map<number, number>()
+    const entries = profile?.history ?? []
+    for (const e of entries) m.set(e.mal_id, e.rating)
     return m
   }, [profile])
 
-  const forYouList = useMemo(() => {
-    if (!profile) return []
+  const historyList = useMemo(() => {
+    const entries = profile?.history ?? []
     const out: Anime[] = []
-    for (const e of profile.forYou) {
+    for (const e of entries) {
       const a = byId.get(e.mal_id)
       if (a) out.push(a)
     }
@@ -262,6 +319,10 @@ export default function App() {
         label: u.displayName,
       }))
     : []
+  const modelOptions = availableModelIds.map((k) => ({
+    id: k,
+    label: profile?.models[k]?.label ?? prettyModelName(k),
+  }))
 
   if (status === 'loading') {
     return (
@@ -311,6 +372,9 @@ export default function App() {
         userId={effectiveUserId ?? profileOptions[0]?.id ?? ''}
         onUserId={setUserId}
         userLabel={profile?.displayName ?? effectiveUserId ?? 'Profile'}
+        models={modelOptions}
+        modelId={effectiveModelId}
+        onModelId={(id) => setModelId(id as ModelKey)}
       />
       <main className="app-main">
         {!hasSearchQuery && activeTab === 'discover' && (
@@ -364,10 +428,21 @@ export default function App() {
           )}
           {!isFilteringActive && (
             <ContentRow
-              title="Matched to your taste"
+              title={`Matched to your taste (${activeModel?.label ?? prettyModelName(effectiveModelId)})`}
               items={forYouList}
               predictedByMalId={predictedMap}
               userRatingByMalId={ratingsByMalId}
+              onOpen={setSelected}
+              onRateAnime={onRateAnime}
+              isSaved={isSaved}
+              onToggleSave={onToggleSaveAnime}
+            />
+          )}
+          {!isFilteringActive && activeTab === 'discover' && historyList.length > 0 && (
+            <ContentRow
+              title={`${profile?.displayName ?? 'Viewer'} liked history`}
+              items={historyList}
+              predictedByMalId={historyRatingMap}
               onOpen={setSelected}
               onRateAnime={onRateAnime}
               isSaved={isSaved}
