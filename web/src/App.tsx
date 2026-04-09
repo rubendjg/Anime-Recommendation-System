@@ -242,6 +242,10 @@ export default function App() {
     () => animeListFromRecEntries(profile?.random, byId, posterByMalId),
     [profile, byId, posterByMalId],
   )
+  const contentBasedList = useMemo(
+    () => animeListFromRecEntries(profile?.contentBased, byId, posterByMalId),
+    [profile, byId, posterByMalId],
+  )
 
   /** Match export TOP_K: same count as popular / forYou / random in JSON */
   const catalogRowLimit = useMemo(() => {
@@ -302,6 +306,7 @@ export default function App() {
       used.add(a.mal_id)
     }
 
+    const contentBasedDisplay = takeDistinctAnime(contentBasedList, used, limit)
     const randomDisplay = takeDistinctAnime(randomList, used, limit)
 
     const filtered = catalog.filter(applyFilters)
@@ -313,6 +318,7 @@ export default function App() {
 
     return {
       popularDisplay,
+      contentBasedDisplay,
       randomDisplay,
       trendingDisplay,
       topRatedDisplay,
@@ -321,6 +327,7 @@ export default function App() {
     profile?.svd,
     profile?.forYou,
     popularList,
+    contentBasedList,
     randomList,
     catalog,
     applyFilters,
@@ -481,6 +488,17 @@ export default function App() {
                   onToggleSave={onToggleSaveAnime}
                 />
               )}
+              {discoverRowLists.contentBasedDisplay.length > 0 && (
+                <ContentRow
+                  title="Because you liked these genres"
+                  items={discoverRowLists.contentBasedDisplay}
+                  userRatingByMalId={ratingsByMalId}
+                  onOpen={setSelected}
+                  onRateAnime={onRateAnime}
+                  isSaved={isSaved}
+                  onToggleSave={onToggleSaveAnime}
+                />
+              )}
               {discoverRowLists.randomDisplay.length > 0 && (
                 <ContentRow
                   title="Surprise picks"
@@ -534,8 +552,7 @@ export default function App() {
       </main>
       <footer className="app-footer">
         <p>
-          Demo UI — replace <code>public/data/*.json</code> with exports from
-          your modeling pipeline.
+          Anime Recommendation System — Chatbots &amp; Recommendation Systems Group Project
         </p>
       </footer>
       <DetailModal

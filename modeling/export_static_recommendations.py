@@ -379,7 +379,7 @@ def collect_export_mal_ids(out: dict) -> set[int]:
         for prof in users.values():
             if not isinstance(prof, dict):
                 continue
-            for key in ("forYou", "svd", "random"):
+            for key in ("forYou", "svd", "random", "contentBased"):
                 lst = prof.get(key)
                 if not isinstance(lst, list):
                     continue

@@ -36,6 +36,8 @@ export type UserRecProfile = {
   svd?: RecEntry[]
   /** Random baseline (fixed seed in export). */
   random?: RecEntry[]
+  /** Content-based recommendations (genre/metadata similarity). */
+  contentBased?: RecEntry[]
 }
 
 export type RecommendationsFile = {

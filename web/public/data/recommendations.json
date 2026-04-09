@@ -692,6 +692,88 @@
           "mal_id": 1765,
           "predicted_rating": 3.97
         }
+      ],
+      "contentBased": [
+        {
+          "mal_id": 451,
+          "predicted_rating": 10.0
+        },
+        {
+          "mal_id": 450,
+          "predicted_rating": 10.0
+        },
+        {
+          "mal_id": 452,
+          "predicted_rating": 10.0
+        },
+        {
+          "mal_id": 449,
+          "predicted_rating": 10.0
+        },
+        {
+          "mal_id": 4938,
+          "predicted_rating": 8.02
+        },
+        {
+          "mal_id": 969,
+          "predicted_rating": 7.35
+        },
+        {
+          "mal_id": 132,
+          "predicted_rating": 6.89
+        },
+        {
+          "mal_id": 479,
+          "predicted_rating": 6.29
+        },
+        {
+          "mal_id": 1186,
+          "predicted_rating": 6.25
+        },
+        {
+          "mal_id": 19123,
+          "predicted_rating": 6.24
+        },
+        {
+          "mal_id": 38234,
+          "predicted_rating": 6.24
+        },
+        {
+          "mal_id": 15323,
+          "predicted_rating": 6.24
+        },
+        {
+          "mal_id": 36215,
+          "predicted_rating": 6.24
+        },
+        {
+          "mal_id": 31289,
+          "predicted_rating": 6.24
+        },
+        {
+          "mal_id": 37902,
+          "predicted_rating": 6.24
+        },
+        {
+          "mal_id": 32437,
+          "predicted_rating": 6.24
+        },
+        {
+          "mal_id": 28285,
+          "predicted_rating": 6.11
+        },
+        {
+          "mal_id": 25157,
+          "predicted_rating": 6.11
+        },
+        {
+          "mal_id": 6811,
+          "predicted_rating": 6.0
+        },
+        {
+          "mal_id": 249,
+          "predicted_rating": 6.0
+        }
       ]
     },
     "viewer-b": {
@@ -1167,6 +1249,88 @@
         {
           "mal_id": 22977,
           "predicted_rating": 8.08
+        }
+      ],
+      "contentBased": [
+        {
+          "mal_id": 4938,
+          "predicted_rating": 10.0
+        },
+        {
+          "mal_id": 1136,
+          "predicted_rating": 9.23
+        },
+        {
+          "mal_id": 969,
+          "predicted_rating": 9.14
+        },
+        {
+          "mal_id": 451,
+          "predicted_rating": 8.19
+        },
+        {
+          "mal_id": 450,
+          "predicted_rating": 8.19
+        },
+        {
+          "mal_id": 452,
+          "predicted_rating": 8.19
+        },
+        {
+          "mal_id": 449,
+          "predicted_rating": 8.19
+        },
+        {
+          "mal_id": 1611,
+          "predicted_rating": 8.11
+        },
+        {
+          "mal_id": 132,
+          "predicted_rating": 7.94
+        },
+        {
+          "mal_id": 36124,
+          "predicted_rating": 6.82
+        },
+        {
+          "mal_id": 2832,
+          "predicted_rating": 6.6
+        },
+        {
+          "mal_id": 14075,
+          "predicted_rating": 6.56
+        },
+        {
+          "mal_id": 998,
+          "predicted_rating": 6.52
+        },
+        {
+          "mal_id": 2983,
+          "predicted_rating": 6.26
+        },
+        {
+          "mal_id": 1397,
+          "predicted_rating": 6.04
+        },
+        {
+          "mal_id": 999,
+          "predicted_rating": 6.04
+        },
+        {
+          "mal_id": 32313,
+          "predicted_rating": 6.0
+        },
+        {
+          "mal_id": 39948,
+          "predicted_rating": 6.0
+        },
+        {
+          "mal_id": 31147,
+          "predicted_rating": 6.0
+        },
+        {
+          "mal_id": 37487,
+          "predicted_rating": 6.0
         }
       ]
     }
