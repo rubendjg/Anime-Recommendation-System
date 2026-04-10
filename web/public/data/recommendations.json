@@ -1009,6 +1009,10 @@
       ],
       "svd": [
         {
+          "mal_id": 999999,
+          "predicted_rating": 10.0
+        },
+        {
           "mal_id": 33095,
           "predicted_rating": 9.11
         },
